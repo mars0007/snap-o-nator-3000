@@ -7,4 +7,10 @@ This is a small demo of how to manage instance snaps
 
 ## Config
 
-snap uses the default profile
+snap uses the default profile created by AWS CLI
+
+`aws configure`
+
+## Running
+
+`pipenv run python .\bin\snap.py`
