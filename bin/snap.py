@@ -8,12 +8,12 @@ ec2 = session.resource('ec2')
 def list_instances():
     "List EC2 instances"
     for i in ec2.instances.all():
-        print(', ',join((
+        print(', '.join((
             i.id,
             i.instance_type,
-            i.placment['AvailabilityZone'],
+            i.placement['AvailabilityZone'],
             i.state['Name'],
-            public_dns_name)))
+            i.public_dns_name)))
 
     return
 
