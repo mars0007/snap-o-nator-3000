@@ -5,8 +5,7 @@ session = boto3.Session(profile_name='default')
 ec2 = session.resource('ec2') 
 
 @click.command()
-@click.option('--project', default=None, 
-    help="Only instances for project (tag Project:<name>)")
+@click.option('--project', default=None, help="Only instances for project (tag Project:<name>)")
 
 def list_instances():
     "List EC2 instances"
