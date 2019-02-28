@@ -13,7 +13,8 @@ snap uses the default profile created by AWS CLI
 
 ## Running
 
-`pipenv run python .\bin\snap.py <command> <--project=PROJECT>`
+`pipenv run python .\bin\snap.py <command> <subcommand> <--project=PROJECT>`
 
-*command* is list, stop or start
+*command* is instances, volumes or snapshots 
+*subcommand* is list, stop or start
 *project* is optional
