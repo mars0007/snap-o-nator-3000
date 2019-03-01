@@ -1,7 +1,6 @@
 import boto3
 import botocore
 import click
-from pygments.lexer import default
 
 session = boto3.Session(profile_name='default') 
 ec2 = session.resource('ec2') 
