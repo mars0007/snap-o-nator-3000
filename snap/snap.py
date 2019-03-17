@@ -7,14 +7,18 @@ session = boto3.Session(profile_name='default')
 ec2 = session.resource('ec2') 
 
 # common functions used in the script
-def filter_instances(project):
+def filter_instances(project, force=False):
     instances = []
 
     if project:
         filters = [{'Name':'tag:Project', 'Values':[project]}]
         instances = ec2.instances.filter(Filters=filters)
     else:
-        instances = ec2.instances.all()
+        if force:
+            instances = ec2.instances.all()
+        else:
+            print('project not set, exiting...')
+            exit()
 
     return instances
 def has_pending_snapshot(volume):
@@ -23,13 +27,14 @@ def has_pending_snapshot(volume):
 
 # cli
 @click.group()
-
 def cli():
     """snap manages snapshots"""
+
 # snapshot commands
 @cli.group('snapshots')
 def snapshots():
     """Commands for snapshorts"""
+# snapshot list
 @snapshots.command('list')
 @click.option('--project', default=None,
     help="Only snapshots for project (tag Project:<name>)")
@@ -60,6 +65,7 @@ def list_snapshots(project,list_all):
 @cli.group('volumes')
 def volumes():
     """Commands for volumes"""
+# volume list
 @volumes.command('list')
 @click.option('--project', default=None,
     help="Only volumes for project (tag Project:<name>)")
@@ -84,14 +90,17 @@ def list_volumes(project):
 @cli.group('instances')
 def instances():
     """Commands for instances"""
+# instance snapshot
 @instances.command('snapshot',
     help="Create snapshot of all volumes")
 @click.option('--project', default=None,
     help="Only instances for project (tag Project:<name>)")
-def create_snapshots(project):
+@click.option('--force', is_flag=True,
+    help="Forces execution even without the project tag")
+def create_snapshots(project,force):
     """Create snapshot for EC2 instances"""
 
-    instances = filter_instances(project)
+    instances = filter_instances(project,force)
 
     for i in instances:
         print("Stopping {0}...".format(i.id))
@@ -114,6 +123,7 @@ def create_snapshots(project):
     print("Snapshot taken, instances restarted, JOB DONE!")
 
     return
+# instance list
 @instances.command('list')
 @click.option('--project', default=None,
     help="Only instances for project (tag Project:<name>)")
@@ -135,13 +145,16 @@ def list_instances(project):
             
 
     return
+# instance stop
 @instances.command('stop')
 @click.option('--project', default=None,
     help="Only instances for project (tag Project:<name>)")
-def stop_instances(project):
+@click.option('--force', is_flag=True,
+    help="Forces execution even without the project tag")
+def stop_instances(project, force):
     "Stop EC2 instances"
     
-    instances = filter_instances(project)
+    instances = filter_instances(project,force)
     
     for i in instances:
         print('Stopping {0}...'.format(i.id))
@@ -152,13 +165,16 @@ def stop_instances(project):
             continue
 
     return
+# instance start
 @instances.command('start')
 @click.option('--project', default=None,
     help="Only instances for project (tag Project:<name>)")
-def stop_instances(project):
+@click.option('--force', is_flag=True,
+    help="Forces execution even without the project tag")
+def stop_instances(project, force):
     "Start EC2 instances"
     
-    instances = filter_instances(project)
+    instances = filter_instances(project,force)
     
     for i in instances:
         print('Starting {0}...'.format(i.id))
@@ -169,17 +185,24 @@ def stop_instances(project):
             continue
 
     return
+# instance reboot
 @instances.command('reboot')
 @click.option('--project', default=None,
     help="Only instances for project (tag Project:<name>)")
-def reboot_instances(project):
+@click.option('--force', is_flag=True,
+    help="Forces execution even without the project tag")
+def reboot_instances(project, force):
     "Reboot EC2 instances"
     
-    instances = filter_instances(project)
+    instances = filter_instances(project,force)
     
     for i in instances:
         print('Rebooting {0}...'.format(i.id))
-        i.reboot()
+        try:
+            i.reboot()
+        except botocore.exceptions.ClientError as e:
+            print(" Could not reboot {0}. ".format(i.id) + str(e))
+            continue
 
     return
 
