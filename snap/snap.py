@@ -2,9 +2,11 @@ import boto3
 import botocore
 import click
 
+# aws connection setup for your default account
 session = boto3.Session(profile_name='default') 
 ec2 = session.resource('ec2') 
 
+# common functions used in the script
 def filter_instances(project):
     instances = []
 
@@ -15,19 +17,19 @@ def filter_instances(project):
         instances = ec2.instances.all()
 
     return instances
-
 def has_pending_snapshot(volume):
     snapshots = list(volume.snapshots.all())
     return snapshots and snapshots[0].state == 'pending'
 
+# cli
 @click.group()
+
 def cli():
     """snap manages snapshots"""
-
+# snapshot commands
 @cli.group('snapshots')
 def snapshots():
     """Commands for snapshorts"""
-
 @snapshots.command('list')
 @click.option('--project', default=None,
     help="Only snapshots for project (tag Project:<name>)")
@@ -54,10 +56,10 @@ def list_snapshots(project,list_all):
     
     return
 
+# volune commands
 @cli.group('volumes')
 def volumes():
     """Commands for volumes"""
-
 @volumes.command('list')
 @click.option('--project', default=None,
     help="Only volumes for project (tag Project:<name>)")
@@ -78,10 +80,10 @@ def list_volumes(project):
 
     return
 
+# instance commands
 @cli.group('instances')
 def instances():
     """Commands for instances"""
-
 @instances.command('snapshot',
     help="Create snapshot of all volumes")
 @click.option('--project', default=None,
@@ -112,7 +114,6 @@ def create_snapshots(project):
     print("Snapshot taken, instances restarted, JOB DONE!")
 
     return
-
 @instances.command('list')
 @click.option('--project', default=None,
     help="Only instances for project (tag Project:<name>)")
@@ -134,7 +135,6 @@ def list_instances(project):
             
 
     return
-
 @instances.command('stop')
 @click.option('--project', default=None,
     help="Only instances for project (tag Project:<name>)")
@@ -152,7 +152,6 @@ def stop_instances(project):
             continue
 
     return
-
 @instances.command('start')
 @click.option('--project', default=None,
     help="Only instances for project (tag Project:<name>)")
@@ -170,6 +169,20 @@ def stop_instances(project):
             continue
 
     return
+@instances.command('reboot')
+@click.option('--project', default=None,
+    help="Only instances for project (tag Project:<name>)")
+def reboot_instances(project):
+    "Reboot EC2 instances"
+    
+    instances = filter_instances(project)
+    
+    for i in instances:
+        print('Rebooting {0}...'.format(i.id))
+        i.reboot()
 
+    return
+
+# main
 if __name__ == '__main__':
     cli()
