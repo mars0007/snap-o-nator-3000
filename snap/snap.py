@@ -7,6 +7,18 @@ session = boto3.Session(profile_name='default')
 ec2 = session.resource('ec2') 
 
 # common functions used in the script
+# this function will filter instance with the project tag.
+def filter_instances_noforce(project):
+    instances = []
+
+    if project:
+        filters = [{'Name':'tag:Project', 'Values':[project]}]
+        instances = ec2.instances.filter(Filters=filters)
+    else:
+        instances = ec2.instances.all()
+        
+    return instances
+# this function will filter instance with the project tag, it will also look for the force switch and exit if it isn't provided. 
 def filter_instances(project, force=False):
     instances = []
 
@@ -21,6 +33,7 @@ def filter_instances(project, force=False):
             exit()
 
     return instances
+# looks for pending snapshots
 def has_pending_snapshot(volume):
     snapshots = list(volume.snapshots.all())
     return snapshots and snapshots[0].state == 'pending'
@@ -43,7 +56,7 @@ def snapshots():
 def list_snapshots(project,list_all):
     "List EC2 snapshots"
     
-    instances = filter_instances(project)
+    instances = filter_instances_noforce(project)
 
     for i in instances:
         for v in i.volumes.all():
@@ -61,7 +74,7 @@ def list_snapshots(project,list_all):
     
     return
 
-# volune commands
+# volume commands
 @cli.group('volumes')
 def volumes():
     """Commands for volumes"""
@@ -72,7 +85,7 @@ def volumes():
 def list_volumes(project):
     "List EC2 volumes"
     
-    instances = filter_instances(project)
+    instances = filter_instances_noforce(project)
 
     for i in instances:
         for v in i.volumes.all():
@@ -90,6 +103,28 @@ def list_volumes(project):
 @cli.group('instances')
 def instances():
     """Commands for instances"""
+# instance list
+@instances.command('list')
+@click.option('--project', default=None,
+    help="Only instances for project (tag Project:<name>)")
+def list_instances(project):
+    "List EC2 instances"
+    
+    instances = filter_instances_noforce(project)
+        
+    for i in instances:
+        tags = { t['Key']: t['Value'] for t in i.tags or [] }
+        print(', '.join((
+            i.id,
+            i.instance_type,
+            i.placement['AvailabilityZone'],
+            i.state['Name'],
+            i.public_dns_name,
+            tags.get('Project', '<no project>')
+            )))
+            
+
+    return
 # instance snapshot
 @instances.command('snapshot',
     help="Create snapshot of all volumes")
@@ -121,28 +156,6 @@ def create_snapshots(project,force):
         i.wait_until_running()
     
     print("Snapshot taken, instances restarted, JOB DONE!")
-
-    return
-# instance list
-@instances.command('list')
-@click.option('--project', default=None,
-    help="Only instances for project (tag Project:<name>)")
-def list_instances(project):
-    "List EC2 instances"
-    
-    instances = filter_instances(project)
-        
-    for i in instances:
-        tags = { t['Key']: t['Value'] for t in i.tags or [] }
-        print(', '.join((
-            i.id,
-            i.instance_type,
-            i.placement['AvailabilityZone'],
-            i.state['Name'],
-            i.public_dns_name,
-            tags.get('Project', '<no project>')
-            )))
-            
 
     return
 # instance stop
