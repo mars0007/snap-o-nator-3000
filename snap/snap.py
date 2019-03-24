@@ -3,7 +3,7 @@ import botocore
 import click
 
 # aws connection setup for your default account
-session = boto3.Session(profile_name=profile) 
+session = boto3.Session(profile_name='default') 
 ec2 = session.resource('ec2') 
 
 # common functions used in the script
@@ -40,11 +40,8 @@ def has_pending_snapshot(volume):
 
 # cli
 @click.group()
-@click.option('--profile',default='default')
-def cli(profile):
+def cli():
     """snap manages snapshots"""
-    click.echo('Profile used is %s' % (profile))
-    profile=
 
 # snapshot commands
 @cli.group('snapshots')
